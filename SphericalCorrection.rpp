@@ -1,0 +1,50 @@
+
+kernel SphericalCorrection : ImageComputationKernel<ePixelWise>
+{
+  Image<eRead, eAccessRandom, eEdgeClamped> src; // the input image
+  Image<eWrite> dst; // the output image
+
+  local:
+    float TWOPI;
+    int width, height;
+
+
+  void define()
+  {
+  }
+
+  void init() 
+  {
+    TWOPI = 2 * PI;
+
+    width = src.bounds.x2;
+    height = src.bounds.y2;
+  }
+
+  void process(int2 pos) 
+  {
+
+    float x2;
+    float theta, phi, phi2;
+
+    theta = PI * (pos.y - (height-1) / 2.0) / (height - 1);
+
+
+    phi = TWOPI * (pos.x - width/2.0) / width;
+    phi2 = phi * cos(theta);
+
+    x2 = phi2 *  width / TWOPI +  width / 2;
+
+    if (x2 < 0 || x2 > (width-1))
+      dst() = 0;
+    else
+    {
+      // Read the input image
+      SampleType(src) input = src(x2, pos.y);
+
+      // Write the result to the output image
+      dst() = float4(input.x, input.y, input.z, input.w);
+     }
+  }
+
+};
